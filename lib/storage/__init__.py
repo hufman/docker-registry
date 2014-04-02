@@ -51,6 +51,10 @@ class Storage(object):
     def image_diff_path(self, image_id):
         return '{0}/{1}/_diff'.format(self.images, image_id)
 
+    def repositories_path(self, namespace):
+        return '{0}/{1}'.format(
+            self.repositories, namespace)
+
     def repository_path(self, namespace, repository):
         return '{0}/{1}/{2}'.format(
             self.repositories, namespace, repository)

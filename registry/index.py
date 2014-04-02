@@ -85,6 +85,25 @@ def update_index_images(namespace, repository, data):
         store.put_content(path, data)
 
 
+def _get_repositories(namespace):
+    repos_path = store.repositories_path(namespace)
+    if repos_path[-1] != '/':
+        repos_path = repos_path + '/'
+    for fname in store.list_directory(repos_path):
+        if '/' in fname[len(repos_path):]:   # subdir of repository
+            continue
+        repo_name = fname.split('/').pop()
+        yield repo_name
+
+
+@app.route('/v1/repositories', methods=['GET'])
+@app.route('/v1/repositories/<namespace>', methods=['GET'])
+def get_repositories(namespace='library'):
+    data = list(_get_repositories(namespace))
+    headers = generate_headers(namespace, '', 'read')
+    return toolkit.response(json.dumps(data), 200, headers, True)
+
+
 @app.route('/v1/repositories/<path:repository>', methods=['PUT'])
 @app.route('/v1/repositories/<path:repository>/images',
            defaults={'images': True},
@@ -137,4 +156,10 @@ def put_repository_auth(namespace, repository):
 
 @app.route('/v1/search', methods=['GET'])
 def get_search():
-    return toolkit.response({})
+    namespace = 'library'
+    query = flask.request.args.get('q', '')
+    repositories = [x for x in _get_repositories(namespace) if query in x]
+    results = [{"name": name, "description": name} for name in repositories]
+    data = {"query": query, "num_results": len(results), "results": results}
+    headers = generate_headers(namespace, '', 'read')
+    return toolkit.response(json.dumps(data), 200, headers, True)
